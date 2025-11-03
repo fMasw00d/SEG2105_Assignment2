@@ -71,7 +71,13 @@ public class ChatClient extends AbstractClient
   {
     try
     {
-      sendToServer(message);
+      
+    	if(message.charAt(0)=='#') { //checks if entered message is a command
+    		handleCommand(message);
+    	} else {
+    		sendToServer(message);
+    	}
+    	
     }
     catch(IOException e)
     {
@@ -93,5 +99,69 @@ public class ChatClient extends AbstractClient
     catch(IOException e) {}
     System.exit(0);
   }
+  //End of provided code ------------------------------------------------------------------------------------------
+  
+  //Implements corresponding hook method from AbstractClient
+  @Override
+  protected void connectionException(Exception exception) {
+	  clientUI.display("Server has shut down.");
+	  quit();
+  }
+  
+  
+  //Implements hook method from AbstractClient
+  @Override
+  protected void connectionClosed() {
+	  clientUI.display("Connection closed.");
+  }
+  
+  //handles commands (messages that start with '#')
+  protected void handleCommand(String command) throws IOException {
+	  if(command.equals("#quit")) {
+		  
+		  quit();
+		  
+	  } else if(command.equals("#logoff")) {
+		  
+		  closeConnection();
+		  
+	  } else if(command.contains("#sethost")) {
+		  
+		  if(!isConnected()) {
+			  setHost(command.substring(command.indexOf(" ")+1));
+		  } else {
+			  System.out.println("Error: This method is only usable when logged off. You are currently logged in.");
+		  }
+		  
+	  } else if(command.contains("#setport")) {
+		  
+		  if(!isConnected()) {
+			  setPort(Integer.parseInt(command.substring(command.indexOf(" ")+1)));
+		  } else {
+			  System.out.println("Error: This method is only usable when logged off. You are currently logged in.");
+		  }
+		  
+	  } else if(command.equals("#login")) {
+		  
+		  if(!isConnected()) {
+			  openConnection();
+		  } else {
+			  System.out.println("Error: You are already logged in.");
+		  }
+		  
+	  } else if(command.equals("#gethost")) {
+		  
+		  System.out.println(getHost());
+		  
+	  } else if(command.equals("#getport")) {
+		  
+		  System.out.println(getPort());
+		  
+	  } else {
+		  
+		  System.out.println("Command does not exist.");
+	  }
+  }
+  
 }
 //End of ChatClient class
