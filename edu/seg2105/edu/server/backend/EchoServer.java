@@ -174,7 +174,7 @@ public class EchoServer extends AbstractServer
 		  
 	  } else if(command.contains("#setport")) {
 		  
-		  if(!isListening()) {
+		  if(!isListening() && getNumberOfClients()==0) {
 			  setPort(Integer.parseInt(command.substring(command.indexOf(" ")+1)));
 		  } else {
 			  serverUI.display("Error: This method is only usable when the server is closed.");
