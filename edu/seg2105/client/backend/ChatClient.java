@@ -26,7 +26,8 @@ public class ChatClient extends AbstractClient
    * The interface type variable.  It allows the implementation of 
    * the display method in the client.
    */
-  ChatIF clientUI; 
+  ChatIF clientUI;
+  String loginID;
 
   
   //Constructors ****************************************************
@@ -39,11 +40,12 @@ public class ChatClient extends AbstractClient
    * @param clientUI The interface type variable.
    */
   
-  public ChatClient(String host, int port, ChatIF clientUI) 
+  public ChatClient(String loginID, String host, int port, ChatIF clientUI) 
     throws IOException 
   {
     super(host, port); //Call the superclass constructor
     this.clientUI = clientUI;
+    this.loginID = loginID;
     openConnection();
   }
 
@@ -72,7 +74,7 @@ public class ChatClient extends AbstractClient
     try
     {
       
-    	if(message.charAt(0)=='#') { //checks if entered message is a command
+    	if(message.charAt(0)=='#' && !(message.contains("#login") && message.contains(loginID))) { //checks if entered message is a command
     		handleCommand(message);
     	} else {
     		sendToServer(message);
@@ -104,8 +106,8 @@ public class ChatClient extends AbstractClient
   //Implements corresponding hook method from AbstractClient
   @Override
   protected void connectionException(Exception exception) {
-	  clientUI.display("Server has shut down.");
-	  quit();
+	  clientUI.display("The server has shut down.");
+	  System.exit(0);
   }
   
   
@@ -119,8 +121,8 @@ public class ChatClient extends AbstractClient
   protected void handleCommand(String command) throws IOException {
 	  if(command.equals("#quit")) {
 		  
-		  quit();
-		  
+		  System.exit(0);
+	
 	  } else if(command.equals("#logoff")) {
 		  
 		  closeConnection();
@@ -130,7 +132,7 @@ public class ChatClient extends AbstractClient
 		  if(!isConnected()) {
 			  setHost(command.substring(command.indexOf(" ")+1));
 		  } else {
-			  System.out.println("Error: This method is only usable when logged off. You are currently logged in.");
+			  clientUI.display("Error: This method is only usable when logged off. You are currently logged in.");
 		  }
 		  
 	  } else if(command.contains("#setport")) {
@@ -138,7 +140,7 @@ public class ChatClient extends AbstractClient
 		  if(!isConnected()) {
 			  setPort(Integer.parseInt(command.substring(command.indexOf(" ")+1)));
 		  } else {
-			  System.out.println("Error: This method is only usable when logged off. You are currently logged in.");
+			  clientUI.display("Error: This method is only usable when logged off. You are currently logged in.");
 		  }
 		  
 	  } else if(command.equals("#login")) {
@@ -146,21 +148,26 @@ public class ChatClient extends AbstractClient
 		  if(!isConnected()) {
 			  openConnection();
 		  } else {
-			  System.out.println("Error: You are already logged in.");
+			  clientUI.display("Error: You are already logged in.");
 		  }
 		  
 	  } else if(command.equals("#gethost")) {
 		  
-		  System.out.println(getHost());
+		  clientUI.display(getHost());
 		  
 	  } else if(command.equals("#getport")) {
 		  
-		  System.out.println(getPort());
+		  clientUI.display(Integer.toString(getPort()));
 		  
 	  } else {
 		  
-		  System.out.println("Command does not exist.");
+		  clientUI.display("Command does not exist.");
 	  }
+  }
+  
+  @Override
+  protected void connectionEstablished() {
+	  handleMessageFromClientUI("#login " + loginID);
   }
   
 }

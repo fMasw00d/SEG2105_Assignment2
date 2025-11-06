@@ -4,6 +4,11 @@ package edu.seg2105.edu.server.backend;
 // license found at www.lloseng.com 
 
 
+import java.io.IOException;
+
+//import java.io.IOException;
+
+import edu.seg2105.client.common.ChatIF;
 import ocsf.server.*;
 
 /**
@@ -24,6 +29,8 @@ public class EchoServer extends AbstractServer
    */
   final public static int DEFAULT_PORT = 5555;
   
+  ChatIF serverUI;
+  
   //Constructors ****************************************************
   
   /**
@@ -31,9 +38,10 @@ public class EchoServer extends AbstractServer
    *
    * @param port The port number to connect on.
    */
-  public EchoServer(int port) 
+  public EchoServer(int port, ChatIF serverUI) 
   {
     super(port);
+    this.serverUI = serverUI;
   }
 
   
@@ -45,11 +53,27 @@ public class EchoServer extends AbstractServer
    * @param msg The message received from the client.
    * @param client The connection from which the message originated.
    */
-  public void handleMessageFromClient
-    (Object msg, ConnectionToClient client)
-  {
-    System.out.println("Message received: " + msg + " from " + client);
-    this.sendToAllClients(msg);
+  public void handleMessageFromClient(Object msg, ConnectionToClient client) {
+	String stringMsg = (String) msg;
+	
+	System.out.println("Message received: " + msg + " from " + client.getInfo("loginID") +".");
+	
+	if(stringMsg.contains("#login")) {
+		
+		if(client.getInfo("loginID")==null) { //checks if first login
+			client.setInfo("loginID",stringMsg.substring(stringMsg.indexOf(" ")+1));
+			System.out.println(client.getInfo("loginID") + " has logged on.");
+			sendToAllClients(client.getInfo("loginID") + " has logged on.");
+		} else {
+			try {
+			client.sendToClient("Error: Login only permitted on startup. Terminating connection...");
+			client.close();
+			} catch(IOException e) {}
+		}
+		
+	} else {
+	    this.sendToAllClients(client.getInfo("loginID") + ": " + msg);
+	}
   }
     
   /**
@@ -82,6 +106,7 @@ public class EchoServer extends AbstractServer
    * @param args[0] The port number to listen on.  Defaults to 5555 
    *          if no argument is entered.
    */
+  /*
   public static void main(String[] args) 
   {
     int port = 0; //Port to listen on
@@ -106,19 +131,71 @@ public class EchoServer extends AbstractServer
       System.out.println("ERROR - Could not listen for clients!");
     }
   }
+  */
   //End of provided code ------------------------------------------------------------------------------------------
   
   //Implements corresponding hook method || for part 1c)
   @Override
   protected void clientConnected(ConnectionToClient client) {
-	  System.out.println("Client " + client.toString() + " has connected.");
+	  System.out.println("A new client has connected to the server.");
   }
   
   //Overrides corresponding method for part 1c
   @Override
   protected void clientDisconnected(ConnectionToClient client) {
 	  super.clientDisconnected(client);
-	  System.out.println("Client " + client.toString() + " has disconnected.");
+	  System.out.println(client.getInfo("loginID") + " has disconnected.");
+  }
+  
+  //handles data coming from UI
+  public void handleMessageFromServerUI(String message) throws IOException {
+      
+	if(message.charAt(0)=='#') { //checks if entered message is a command
+		handleCommand(message);
+	} else {
+		serverUI.display("SERVER MSG> " + message);
+		sendToAllClients("SERVER MSG> " + message);
+	}
+	
+  }
+  
+  protected void handleCommand(String command) throws IOException {
+	  if(command.equals("#quit")) {
+		  
+		  System.exit(0);
+		  
+	  } else if(command.equals("#stop")) {
+		  
+		  stopListening();
+		  
+	  } else if(command.equals("#close")) {
+		  
+		  close();
+		  
+	  } else if(command.contains("#setport")) {
+		  
+		  if(!isListening()) {
+			  setPort(Integer.parseInt(command.substring(command.indexOf(" ")+1)));
+		  } else {
+			  serverUI.display("Error: This method is only usable when the server is closed.");
+		  }
+		  
+	  } else if(command.equals("#getport")) {
+		  
+		  serverUI.display(Integer.toString(getPort()));
+		  
+	  } else if(command.equals("#start")) {
+		  
+		  if(!isListening()) {
+			  listen();
+		  } else {
+			  serverUI.display("Error: This method is only usable when the server is stopped.");
+		  }
+		  
+	  } else {
+		  
+		  serverUI.display("Command does not exist.");
+	  }
   }
   
 }
