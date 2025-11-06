@@ -74,7 +74,7 @@ public class ChatClient extends AbstractClient
     try
     {
       
-    	if(message.charAt(0)=='#' && !(message.equals("#login " +loginID))) { //checks if entered message is a command
+    	if(message.charAt(0)=='#' && !(message.contains("#login "))) { //checks if entered message is a command
     		handleCommand(message);
     	} else {
     		sendToServer(message);
